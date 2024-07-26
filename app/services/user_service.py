@@ -114,6 +114,8 @@ class UserService:
             return False
         await session.delete(user)
         await session.commit()
+        logger.info(f"User with ID {user_id} has been deleted.")
+        logger.info(f"User with nickname {user.nickname} has been deleted.")
         return True
 
     @classmethod
