@@ -82,18 +82,30 @@ async def get_user(user_id: UUID, request: Request, db: AsyncSession = Depends(g
 # experience by adhering to REST principles and providing self-discoverable operations.
 
 @router.put("/users/{user_id}", response_model=UserResponse, name="update_user", tags=["User Management Requires (Admin or Manager Roles)"])
-async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+async def update_user(
+    user_id: UUID,
+    user_update: UserUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+    current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))
+):
     """
     Update user information.
 
     - **user_id**: UUID of the user to update.
     - **user_update**: UserUpdate model with updated user information.
     """
+    logger.info(f"Received request to update user with ID: {user_id}")
     user_data = user_update.model_dump(exclude_unset=True)
+    logger.debug(f"User data to be updated: {user_data}")
+
     updated_user = await UserService.update(db, user_id, user_data)
     if not updated_user:
+        logger.error(f"User with ID {user_id} not found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    logger.info(f"User with ID {user_id} updated successfully")
     return UserResponse.model_construct(
         id=updated_user.id,
         bio=updated_user.bio,
@@ -101,6 +113,7 @@ async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, 
         last_name=updated_user.last_name,
         nickname=updated_user.nickname,
         email=updated_user.email,
+        role=updated_user.role,
         last_login_at=updated_user.last_login_at,
         profile_picture_url=updated_user.profile_picture_url,
         github_profile_url=updated_user.github_profile_url,

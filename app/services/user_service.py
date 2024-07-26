@@ -87,13 +87,15 @@ class UserService:
     @classmethod
     async def update(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> Optional[User]:
         try:
-            # validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
+            logger.info(f"Attempting to update user with ID: {user_id}")
             validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
-
+            logger.debug(f"Validated update data: {validated_data}")
             if 'password' in validated_data:
                 validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
+                logger.debug("Password was updated")
             query = update(User).where(User.id == user_id).values(**validated_data).execution_options(synchronize_session="fetch")
             await cls._execute_query(session, query)
+            logger.debug("Update query executed successfully")
             updated_user = await cls.get_by_id(session, user_id)
             if updated_user:
                 session.refresh(updated_user)  # Explicitly refresh the updated user object
